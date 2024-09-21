@@ -97,6 +97,18 @@ The service name org.freedesktop.DBus, the object path /org/freedesktop/DBus, an
 
 The Introspect method 
 
+## gdbus call
+
+gdbus call --session --dest=org.freedesktop.DBus --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.Introspectable.Introspect
+
+## dbus send
+
+dbus-send --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.Introspectable.Introspect
+
+## dbus launch
+
+dbus-launch --exit-with-session bash
+
 # How to be service
 
 Step 1: Set Up Your Environment
