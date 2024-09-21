@@ -94,6 +94,10 @@ dbus_message_append_args(message, DBUS_TYPE_INT32, &arg, DBUS_TYPE_INVALID);
 
 // after append ...
 
+## busctl
+
+https://manpages.ubuntu.com/manpages/focal/zh_TW/man1/busctl.1.html
+
 ## dbus method
 
 The service name org.freedesktop.DBus, the object path /org/freedesktop/DBus, and the interface org.freedesktop.DBus.Introspectable.
