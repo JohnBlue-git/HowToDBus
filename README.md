@@ -2,6 +2,12 @@
 
 https://github.com/makercrew/dbus-sample
 
+
+$ apt-file search dbus/dbus.h
+libdbus-1-dev: /usr/include/dbus-1.0/dbus/dbus.h
+libdbus-cpp-dev: /usr/include/core/dbus/dbus.h 
+
+
 #include <dbus/dbus.h>
 
 #include <cstddef>
