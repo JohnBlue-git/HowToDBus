@@ -93,9 +93,9 @@ dbus_message_append_args(message, DBUS_TYPE_INT32, &arg, DBUS_TYPE_INVALID);
 
 ## dbus method
 
-The method Introspect from the interface org.freedesktop.DBus.Introspectable exists as part of the D-Bus specification. This method is implemented by any D-Bus service that supports introspection.
+The service name org.freedesktop.DBus, the object path /org/freedesktop/DBus, and the interface org.freedesktop.DBus.Introspectable.
 
-
+The Introspect method 
 
 # How to be service
 
