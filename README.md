@@ -2,6 +2,7 @@
 
 https://github.com/makercrew/dbus-sample
 
+$ sudo apt install apt-file
 
 $ apt-file search dbus/dbus.h
 libdbus-1-dev: /usr/include/dbus-1.0/dbus/dbus.h
@@ -77,7 +78,9 @@ main (
     return 0;
 }
 
-g++ dbus.cpp -std=c++0x $(pkg-config dbus-1 --cflags) -ldbus-1 -Werror -Wall -Wextra
+g++ dbus_sample.cpp -o dbus_sample.cpp -std=c++0x $(pkg-config dbus-1 --cflags) -ldbus-1 -Werror -Wall -Wextra
+
+
 
 /* Created and copyrighted by Zachary J. Fields. Offered as open source under the MIT License (MIT). */
 
@@ -105,9 +108,109 @@ gdbus call --session --dest=org.freedesktop.DBus --object-path /org/freedesktop/
 
 dbus-send --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.Introspectable.Introspect
 
-## dbus launch
+## dbus start (may bit start in Linux)
 
-dbus-launch --exit-with-session bash
+$ sudo systemctl start dbus
+"systemd" is not running in this container due to its overhead.
+Use the "service" command to start services instead. e.g.: 
+
+$ service
+Usage: service < option > | --status-all | [ service_name [ command | --full-restart ] ]
+$ service --status-all
+ [ ? ]  binfmt-support
+ [ - ]  dbus
+ [ ? ]  hwclock.sh
+ [ - ]  procps
+ [ - ]  rsync
+ [ + ]  ssh
+ [ - ]  x11-common
+$ sudo service dbus --full-restart
+
+## dbus session
+
+System or Session ?
+
+System D-Bus
+
+Global Scope: The system D-Bus operates at the system level, meaning it is accessible to all users. This allows different user applications to communicate with system services, regardless of which user account they are running under.
+
+Service Accessibility: Services that register with the system D-Bus are available to any user who has the appropriate permissions. For example, system services like network management or hardware access typically run on the system bus.
+
+Access Control: Access to specific services on the system bus is controlled by policy files (usually found in /etc/dbus-1/system.d/). These files define who can call which methods, providing a layer of security.
+
+User-Specific D-Bus
+
+In contrast, each user account has its own session D-Bus, which is isolated and only accessible by processes running in that user’s session. This allows user-specific applications to communicate without affecting others.
+
+$ ps -ef | grep dbus
+message+    8172       1  0 12:52 ?        00:00:00 /usr/bin/dbus-daemon --system
+codespa+   12543    4277  0 13:02 pts/2    00:00:00 dbus-run-session -- bash
+codespa+   12544   12543  0 13:02 pts/2    00:00:00 dbus-daemon --nofork --print-address 4 --session
+
+Why session ?
+
+1. Isolation of Services
+A D-Bus session creates an isolated environment for communication between applications. Each user session can have its own D-Bus session, which helps prevent interference between services running for different users.
+
+2. Access Control
+D-Bus implements a permission model where services can restrict access based on the session. By starting a new session, you ensure that only processes within that session can communicate with each other, enhancing security.
+
+3. User-Specific Services
+Many applications (especially desktop applications) register services on the session bus that are relevant only to the user currently logged in. Starting a D-Bus session ensures that you can interact with these user-specific services.
+
+4. Environment Setup
+A D-Bus session initializes necessary environment variables (like DBUS_SESSION_BUS_ADDRESS) that applications rely on to connect to the session bus. Without this, applications may fail to find and connect to the bus.
+
+5. Development and Testing
+For developers, starting a D-Bus session allows for testing applications in a controlled environment, simulating how they would operate in a full user session.
+
+6. Access to Introspection and Signals
+When a D-Bus session is active, you can leverage features like introspection (discovering available interfaces and methods) and signals (event notifications) effectively.
+
+dbus related to session ?
+
+dbus-launch (but not all linux have it)
+
+dbus-run-session (can be used as a replacement)
+
+dbus-run-session ?
+
+If you want to run a terminal within a new D-Bus session, you can do:
+
+dbus-run-session -- gnome-terminal
+
+If you just want to interact with D-Bus commands, you can start a session and then run your commands in that session:
+
+dbus-run-session -- bash
+
+How to check session ?
+
+echo $DBUS_SESSION_BUS_ADDRESS
+
+How to create different session ?
+
+dbus-run-session -- ./hello_service.sh &
+dbus-run-session -- ./hello_service.sh &
+
+How to distinquish ?
+
+1. Use Environment Variables
+When you start a session, you can export the address to a file or print it:
+Start a new session and save the address
+
+dbus-run-session -- bash -c 'echo $DBUS_SESSION_BUS_ADDRESS > /tmp/session1_address.txt && sleep 10'
+
+2. Check Session Addresses
+cat /tmp/session1_address.txt
+
+3. Bind to a Specific Session
+export DBUS_SESSION_BUS_ADDRESS=$(cat /tmp/session1_address.txt)
+
+
+
+
+
+
 
 # How to be service
 
@@ -181,19 +284,47 @@ int main() {
 Step 4: Build the Service
 Compile your service with the D-Bus library:
 
-g++ -o hello_service hello_service.cpp `pkg-config --cflags --libs dbus-1`
+g++ hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
+
+// -Werror
+// will error about unused variable
+
 Step 5: Run the Service
 Start your D-Bus service in a terminal:
 
 ./hello_service
+
 Step 6: Test the Service
 You can test your service using gdbus or dbus-send. For example, to call the Hello method:
 
-gdbus call --session --dest com.example.HelloService --object-path /com/example/HelloService --method com.example.HelloService.Hello
-Summary
-This example demonstrates how to create a simple D-Bus service in C++. You:
 
-Set up the environment and libraries.
-Defined an interface with a method.
-Implemented the method and registered the service with D-Bus.
-Built and ran the service.
+gdbus call --system --dest com.example.HelloService --object-path /com/example/HelloService --method com.example.HelloService.Hello
+
+
+among Step 4 ~ 6: allow service
+
+The error you're encountering indicates that your D-Bus service is being denied the ability to own the specified service name (com.example.HelloService) due to security policies defined in the D-Bus configuration files.
+
+Create or Modify a D-Bus policy file that grants permission for your application to own the service name.
+
+Location:
+/etc/dbus-1/system.d/ for system services
+/etc/dbus-1/session.d/ for session services.
+
+Create a file called com.example.HelloService.conf:
+
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+    <policy user="yourusername">  <!-- Replace with your username -->
+        <allow own="com.example.HelloService"/>
+        <allow send_destination="com.example.HelloService"/>
+        <allow receive_sender="com.example.HelloService"/>
+    </policy>
+</busconfig>
+
+Make sure to replace yourusername with your actual username.
+Restart D-Bus: After modifying or creating the policy file, you may need to restart the D-Bus service to apply the changes.
+For session bus, you can usually just log out and log back in. For system bus, you may use:
+
+sudo systemctl restart dbus
