@@ -14,11 +14,16 @@ com.example.HelloService.conf
         <allow own="com.example.HelloService"/>
         <allow send_destination="com.example.HelloService"/>
         <allow receive_sender="com.example.HelloService"/>
+        <allow send_interface="com.example.HelloInterface"/>
     </policy>
 </busconfig>
 
 # <thread>, <future>, async related,  need -lpthread
-g++ hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra
+g++ hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra  -DBLOCK_ACCEPT
+ -DBLOCK_ACCEPT
+
+./hello_service
+sudo ./hello_service will trigger many thing that are not allowed and show error message
 
 busctl call --system com.example.HelloService /com/example/HelloService com.example.HelloInterface Hello s world
 
@@ -108,14 +113,13 @@ public:
             // Send the reply
             if (reply) {
                 dbus_connection_send(this->conn, reply, nullptr);
-                // cannot ? DBusClient::sendReply(reply);
-                
                 // Release reply
                 dbus_message_unref(reply);
             }
 
     UNREF_MESSAGE:
-            dbus_message_unref(message);
+            if (message)
+                dbus_message_unref(message);
         }
     }
     
@@ -152,10 +156,15 @@ int main() {
 
     // Service
     HelloService service(dbus_conn.getConn());
-//#if
+#ifdef BLOCK_ACCEPT
     service.run_blocking_accept();
-//#if
-//#endif
+#endif
+#ifdef ASYNC_ACCEPT
+    service.run_async_accept();
+#endif
+#ifdef THREAD_ACCEPT
+    service.run_accept_then_threading();
+#endif
 
     return 0;
 }

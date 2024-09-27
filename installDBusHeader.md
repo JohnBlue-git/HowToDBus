@@ -25,8 +25,7 @@ wget https://dbus.freedesktop.org/releases/dbus/dbus-1.12.20.tar.gz
 Replace 1.12.20 with the latest version available.
 
 Extract the Tarball:
-tar -xzf dbus-1.12.20.tar.gz
-cd dbus-1.12.20
+tar -xzf dbus-1.12.20.tar.gz && cd dbus-1.12.20
 
 Install Build Dependencies: Before building, make sure you have the necessary tools and libraries:
 sudo apt-get install build-essential autoconf automake libtool
@@ -40,3 +39,6 @@ make
 
 Install the Library:
 sudo make install
+
+./configure && make install
+

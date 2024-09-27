@@ -75,11 +75,6 @@ protected:
     virtual DBusMessage* sendMethodCall(
         DBusMessage* method_call)
         = 0;
-
-    // Send reply
-    virtual void sendReply(
-        DBusMessage* reply)
-        = 0;
 };
 
 //
@@ -160,16 +155,5 @@ protected:
             std::cerr << error.name << std::endl << error.message << std::endl;
         }
         return reply;
-    }
-
-    void sendReply(
-        DBusMessage* reply)
-        override
-    {
-        if (! reply) {
-            return;
-        }
-        //       DBusConnection*, DBusMessage*, *client_serial: A pointer to a variable to store the message serial number, or NULL if you don’t need the serial number.
-        dbus_connection_send(this->conn, reply, nullptr);
     }
 };

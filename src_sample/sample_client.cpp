@@ -1,3 +1,17 @@
+/*
+
+Check D-Bus Policy Configuration: 
+
+Ensure that the D-Bus configuration allows your user to call the method on the specified interface. The configuration files are usually located in /etc/dbus-1/system.d/ or /etc/dbus-1/session.d/. You might need to add or modify a policy rule to allow your method call. Example policy rule:
+
+XML
+
+<policy user="your-username">
+    <allow send_destination="org.freedesktop.DBus" send_interface="org.freedesktop.DBus.Debug.Stats" />
+</policy>
+
+*/
+
 #include <iostream>
 
 #include "../include/dbus_wrapper.hpp"
