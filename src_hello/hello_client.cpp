@@ -5,6 +5,7 @@ g++ hello_client.cpp -o hello_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wal
 */
 
 #include <iostream>
+#include <functional>
 
 #include "../include/dbus_wrapper.hpp"
 
@@ -13,17 +14,14 @@ private:
     const char* service_name;// const no need to free
     const char* object_path;// const no need to free
     const char* interface_name;// const no need to free
-    const char* response = nullptr;
-    const char* who = nullptr;
 
 public:
     // Constructor
-    HelloClient(DBusConnection* dc, const char* nm):
+    HelloClient(DBusConnection* dc):
         DBusClient(dc),
         service_name("com.example.HelloService"),
         object_path("/com/example/HelloService"),
-        interface_name("com.example.HelloInterface"),
-        who(nm)
+        interface_name("com.example.HelloInterface")
         {}
     // delete
     HelloClient(HelloClient&& other) = delete;
@@ -34,7 +32,12 @@ public:
     ~HelloClient() {}
 
 public:
-    void callHello() {
+    static void showHello(const std::string& response) {
+        std::cout << response << std::endl;
+    }
+
+public:
+    void callHello(const char* who, const std::function<void(const std::string&)>& callback = nullptr) {
         // Connection
         if (! this->conn) {
             return;
@@ -57,23 +60,25 @@ public:
         // Send method call
         DBusMessage* reply = DBusClient::sendMethodCall(method_call);
         // Parse response and Store
-        HelloClient::parseHello(reply);
+        HelloClient::parseHello(reply, callback);
         // Release reply
         dbus_message_unref(reply);
-
-        // Execute callback
-    }
-
-public:
-    void showHello() {
-        std::cout << response << std::endl;
     }
 
 private:
     // s
-    void parseHello(DBusMessage* reply) {
-        if ( ! dbus_message_get_args(reply, &(this->error), DBUS_TYPE_STRING, &(this->response), DBUS_TYPE_INVALID) ) {
+    void parseHello(DBusMessage* reply, const std::function<void(const std::string&)>& callback) {
+        // response
+        const char* response;
+
+        // Parse reply
+        if ( ! dbus_message_get_args(reply, &(this->error), DBUS_TYPE_STRING, &response, DBUS_TYPE_INVALID) ) {
             std::cout << this->error.name << std::endl << this->error.message << std::endl;
+        }
+
+        // Execute callback
+        if (callback) {
+            callback(response);
         }
     }
 };
@@ -82,9 +87,16 @@ int main() {
     // DBus connection (type: DBUS_BUS_SYSTEM / DBUS_BUS_SESSION)
     DBusConn dbus_conn(DBUS_BUS_SYSTEM);
 
-    HelloClient client(dbus_conn.getConn(), "World");
-    client.callHello();
-    client.showHello();
+    HelloClient client(dbus_conn.getConn());
+    // static function
+    client.callHello("World", HelloClient::showHello);
+    // lambda function
+    client.callHello(
+        "World",
+        [] (const std::string& response) {
+            std::cout << response << std::endl;
+        }
+    );
 
     return 0;
 }
