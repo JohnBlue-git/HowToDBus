@@ -9,7 +9,7 @@ project(SampleClient VERSION 1.0)
 
 # Include header
 include_directories(sample_client PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
   )
 # Source code
 file(GLOB SOURCES
