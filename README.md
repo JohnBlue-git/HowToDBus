@@ -332,3 +332,22 @@ Restart D-Bus: After modifying or creating the policy file, you may need to rest
 For session bus, you can usually just log out and log back in. For system bus, you may use:
 
 sudo systemctl restart dbus
+
+# Plan
+
+## client sample
+- method: s
+- method: a{sv}
+- get property (not yet)
+- signal (?)
+
+## service
+- server
+    - method s
+    - property (?)
+    - signal (?)
+    - async (not yet)
+- client: ()
+    - method
+    - property (?)
+    - signal (?)
