@@ -30,6 +30,9 @@ add_executable(hello_service ${CMAKE_CURRENT_SOURCE_DIR}/hello_service.cpp)
 add_compile_options(
   -Wall -Wextra
   )
+target_compile_options(hello_service PRIVATE
+  -DBLOCK_ACCEPT
+  )
 
 # Find Thread (could be pthread or win-thread)
 find_package(Threads REQUIRED)
