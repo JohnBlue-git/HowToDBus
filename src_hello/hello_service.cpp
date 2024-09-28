@@ -9,7 +9,8 @@ com.example.HelloService.conf
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
     "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 <busconfig>
-    <!-- Allow any user to talk to our service -->
+    <!--   *   Allow any user to talk to our service -->
+    <!-- $USER Replace with your username -->
     <policy user="*">
         <allow own="com.example.HelloService"/>
         <allow send_destination="com.example.HelloService"/>
@@ -73,7 +74,8 @@ public:
         // Main loop
         while (true) {
             // Without blocking (drawback is busy waiting)
-            //dbus_connection_read_write(this->conn, 1000); will return true/false; can set timeout (ms)
+            //dbus_connection_read_write(this->conn, 1000);
+            // will return true/false; can set timeout (ms)
             // should accompany with
             //#include <unistd.h>
             //usleep(1000);
