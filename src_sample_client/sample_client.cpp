@@ -13,8 +13,10 @@ XML
 */
 
 #include <iostream>
+#include <unordered_map>
 
-#include "../include/dbus_wrapper.hpp"
+#include "../include/dbus_conn_wrapper.hpp"
+#include "../include/dbus_client_wrapper.hpp"
 
 class Introspectable : public DBusClient {
 private:
@@ -41,61 +43,34 @@ public:
 
 public:
     void callIntrospectable() {
-        // Connection
-        if (! this->conn) {
-            return;
-        }
-
-        // Initialize here to avoid cross creation (related to goto)
-        DBusMessage* method_call = nullptr;
-        DBusMessage* reply = nullptr;
-
-        // Compose remote procedure call
-        if ( nullptr == 
-            (method_call = DBusClient::composeMethodCall(
-                this->service_name,
-                this->object_path,
-                this->interface_name,
-                "Introspect")
-             ) ) {
-            goto UNREF_METHOD;
-        }
-
-        // Send method call
-        if ( nullptr == (reply = DBusClient::sendMethodCall(method_call)) ) {
-            goto UNREF_REPLY;
-        }
-
-        // Parse response and Store
-        Introspectable::parseIntrospectable(reply);
-
-        // Release
-UNREF_REPLY:
-        dbus_message_unref(reply);
-UNREF_METHOD:
-        dbus_message_unref(method_call);
-    }
-
-public:
-    void showIntrospectable() {
-        std::cout << response << std::endl;
+        DBusClient::callMethod(
+            this->service_name,
+            this->object_path,
+            this->interface_name,
+            "Introspect",
+            nullptr,
+            [this] (DBusMessage* reply) {
+                this->Introspectable::parseIntrospectable(reply);
+            }
+        );
     }
 
 private:
     // s
     void parseIntrospectable(DBusMessage* reply) {
+        const char* response = nullptr;
         if ( false == dbus_message_get_args(
                 reply,
                 &(this->error),
                 DBUS_TYPE_STRING,
-                &(this->response),
+                &response,
                 DBUS_TYPE_INVALID)
             ) {
             std::cout << this->error.name << std::endl << this->error.message << std::endl;
         }
         std::cout << "Connected to D-Bus as \"" << ::dbus_bus_get_unique_name(this->conn) << "\"." << std::endl;
         std::cout << "Introspection Result:" << std::endl << std::endl;
-        std::cout << this->response << std::endl;
+        std::cout << response << std::endl;
     }
 };
 
@@ -104,7 +79,6 @@ private:
     const char* service_name;// const no need to free
     const char* object_path;// const no need to free
     const char* interface_name;// const no need to free
-    std::unordered_map<const char*, unsigned int> arr;
 
 public:
     // Constructor
@@ -124,51 +98,23 @@ public:
 
 public:
     void callGetStats() {
-        // Connection
-        if (! this->conn) {
-            return;
-        }
-
-        // Initialize here to avoid cross creation (related to goto)
-        DBusMessage* method_call = nullptr;
-        DBusMessage* reply = nullptr;
-
-        // Compose remote procedure call
-        if ( nullptr == 
-            (method_call = DBusClient::composeMethodCall(
-                this->service_name,
-                this->object_path,
-                this->interface_name,
-                "GetStats")
-            ) ) {
-            goto UNREF_METHOD1;
-        }
-
-        // Send method call
-        if ( nullptr == (reply = DBusClient::sendMethodCall(method_call)) ) {
-            goto UNREF_REPLY1;
-        }
-        
-        // Parse response and Store
-        DebugStats::parseGetStats(reply);
-
-        // Release
-UNREF_REPLY1:
-        dbus_message_unref(reply);
-UNREF_METHOD1:
-        dbus_message_unref(method_call);
-    }
-
-public:
-    void showGetStats() {
-        for (const auto& pr : this->arr) {
-            std::cout << "Key: " << pr.first << ", Value: " << pr.second << std::endl;
-        }
+        DBusClient::callMethod(
+            this->service_name,
+            this->object_path,
+            this->interface_name,
+            "GetStats",
+            nullptr,
+            [this] (DBusMessage* reply) {
+                this->DebugStats::parseGetStats(reply);
+            }
+        );
     }
 
 private:
     // a{sv}
     void parseGetStats(DBusMessage* reply) {
+        std::unordered_map<const char*, unsigned int> arr;
+
         DBusMessageIter iter;
         dbus_message_iter_init(reply, &iter);
         if (DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type(&iter)) {
@@ -195,7 +141,11 @@ private:
             //valueType == DBUS_TYPE_UINT32 or valueType == DBUS_TYPE_STRING
             dbus_message_iter_get_basic(&variant, &value);
 
-            this->arr[key] = value;
+            arr[key] = value;
+        }
+
+        for (const auto& pr : arr) {
+            std::cout << "Key: " << pr.first << ", Value: " << pr.second << std::endl;
         }
     }
 };
@@ -207,18 +157,15 @@ int main() {
     // DBus.Introspectable
     //Introspectable intro(dbus_conn.getConn());
     //intro.callIntrospectable();
-    //intro.showIntrospectable();
 
     // DBus.Debug.Stats 
     DebugStats debug_stats(dbus_conn.getConn());
     debug_stats.callGetStats();
-    debug_stats.showGetStats();
     /*
     IDBusClient* ptr = &debug_stats;
     DebugStats* derived_ptr = dynamic_cast<DebugStats*>(ptr);
     if (derived_ptr) {
         derived_ptr->callmethodGetStats();
-        derived_ptr->showGetStats();
     }
     */
 

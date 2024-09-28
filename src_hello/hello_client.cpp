@@ -1,13 +1,14 @@
 /*
 
-g++ hello_client.cpp -o hello_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
+g++ ../hello_client.cpp -o hello_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
 
 */
 
 #include <iostream>
 #include <functional>
 
-#include "../include/dbus_wrapper.hpp"
+#include "../include/dbus_conn_wrapper.hpp"
+#include "../include/dbus_client_wrapper.hpp"
 
 class HelloClient : public DBusClient {
 private:
@@ -38,48 +39,55 @@ public:
 
 public:
     void callHello(const char* who, const std::function<void(const std::string&)>& callback = nullptr) {
-        // Connection
-        if (! this->conn) {
-            return;
-        }
-
-        // Compose remote procedure call
-        DBusMessage* method_call = DBusClient::composeMethodCall(
+        DBusClient::callMethod(
             this->service_name,
             this->object_path,
             this->interface_name,
-            "Hello"
+            "Hello",
+            [&who] (DBusMessage* method_call) {
+                if ( false == dbus_message_append_args(
+                    method_call,
+                    DBUS_TYPE_STRING,
+                    &who,
+                    DBUS_TYPE_INVALID)
+                    ) {
+                    std::cerr << "ERROR: dbus_message_append_args - Unable to append argument!" << std::endl;
+                    return false;
+                }
+                return true;
+            },
+            [this, &callback] (DBusMessage* reply) {
+                this->HelloClient::parseHello(reply, callback);
+            }
         );
-        if (! method_call) {
-            return;
-        }
-
-        // Append argument
-        dbus_message_append_args(method_call, DBUS_TYPE_STRING, &who, DBUS_TYPE_INVALID);
-
-        // Send method call
-        DBusMessage* reply = DBusClient::sendMethodCall(method_call);
-        // Parse response and Store
-        HelloClient::parseHello(reply, callback);
-        // Release reply
-        dbus_message_unref(reply);
     }
 
 private:
     // s
     void parseHello(DBusMessage* reply, const std::function<void(const std::string&)>& callback) {
+        DBusError error;
+        dbus_error_init(&error);
+
         // response
         const char* response;
 
         // Parse reply
-        if ( ! dbus_message_get_args(reply, &(this->error), DBUS_TYPE_STRING, &response, DBUS_TYPE_INVALID) ) {
-            std::cout << this->error.name << std::endl << this->error.message << std::endl;
+        if ( false == dbus_message_get_args(
+            reply,
+            &error,
+            DBUS_TYPE_STRING,
+            &response,
+            DBUS_TYPE_INVALID)
+            ) {
+            std::cout << error.name << std::endl << error.message << std::endl;
         }
 
         // Execute callback
         if (callback) {
             callback(response);
         }
+
+        dbus_error_free(&error);
     }
 };
 

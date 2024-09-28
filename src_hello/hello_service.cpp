@@ -19,8 +19,10 @@ com.example.HelloService.conf
     </policy>
 </busconfig>
 
+sudo service dbus --full-restart
+
 # <thread>, <future>, async related,  need -lpthread
-g++ hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra  -DBLOCK_ACCEPT
+g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra -DBLOCK_ACCEPT
  -DBLOCK_ACCEPT
 
 ./hello_service
@@ -34,8 +36,7 @@ busctl call --system com.example.HelloService /com/example/HelloService com.exam
 #include <thread>
 #include <future>       // for std::async
 
-#include "../include/dbus_wrapper.hpp"
-
+#include "../include/dbus_conn_wrapper.hpp"
 
 class HelloService {
 private:
@@ -104,24 +105,26 @@ public:
                 });
             */
 
-            // Check request
+            // Switch request
             if ( true == dbus_message_is_method_call(message, "com.example.HelloInterface", "Hello") ) {
                 reply = HelloService::createReplyFromHello(message);
             }
             else {
-                goto UNREF_MESSAGE;
+                reply = dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found");
             }
 
-            // Send the reply
+            // Send reply
             if (reply) {
                 dbus_connection_send(this->conn, reply, nullptr);
                 // Release reply
                 dbus_message_unref(reply);
             }
 
-    UNREF_MESSAGE:
-            if (message)
+UNREF_MESSAGE:
+            // Release message
+            if (message) {
                 dbus_message_unref(message);
+            }
         }
     }
     
@@ -133,15 +136,29 @@ private:
     DBusMessage* createReplyFromHello(DBusMessage* message) {
         // Get input
         const char* inputName;
-        dbus_message_get_args(message, nullptr, DBUS_TYPE_STRING, &inputName, DBUS_TYPE_INVALID);
-                        
+        if ( false == dbus_message_get_args(
+            message,
+            nullptr,
+            DBUS_TYPE_STRING,
+            &inputName,
+            DBUS_TYPE_INVALID)
+            ) {
+            return dbus_message_new_error(message, DBUS_ERROR_INVALID_ARGS, "Invalid argument format");
+        } 
+                       
         // Hello method
         std::string greeting = HelloService::Hello(inputName);
         
         // Create a reply message
+        //
         DBusMessage* reply = dbus_message_new_method_return(message);
-        dbus_message_append_args(reply, DBUS_TYPE_STRING, &greeting, DBUS_TYPE_INVALID);
-        // not yet DBusClient::appendArg(reply, DBUS_TYPE_STRING, "hello");//&greeting
+        //
+        dbus_message_append_args(
+            reply,
+            DBUS_TYPE_STRING,
+            &greeting,
+            DBUS_TYPE_INVALID);
+        //
         return reply;
     }
 
