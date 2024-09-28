@@ -23,6 +23,7 @@ sudo service dbus --full-restart
 
 # <thread>, <future>, async related,  need -lpthread
 g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra -DBLOCK_ACCEPT
+
  -DBLOCK_ACCEPT
 
 ./hello_service
@@ -37,25 +38,25 @@ busctl call --system com.example.HelloService /com/example/HelloService com.exam
 #include <future>       // for std::async
 
 #include "../include/dbus_conn_wrapper.hpp"
+#include "../include/dbus_server_wrapper.hpp"
 
-class HelloService {
+class HelloService : public DBusServer {
 private:
     DBusError error;
 private:
-    DBusConnection* conn;
     const char* service_name;// const no need to free
     bool runnable = true;
 
 public:
     // Constructor
     HelloService(DBusConnection* dc):
-        conn(dc),
+        DBusServer(dc),
         service_name("com.example.HelloService")
     {
         dbus_error_init(&error);
 
         // Request a name on the bus
-        if ( ! dbus_bus_request_name(this->conn, this->service_name, DBUS_NAME_FLAG_REPLACE_EXISTING, &(this->error)) ) {
+        if ( false == dbus_bus_request_name(this->conn, this->service_name, DBUS_NAME_FLAG_REPLACE_EXISTING, &(this->error)) ) {
             runnable = false;
             std::cerr << "Name Error: " << this->error.message << std::endl;
         }
@@ -64,7 +65,7 @@ public:
     HelloService(HelloService&& other) = delete;
     HelloService& operator=(HelloService&& other) = delete;
     HelloService(const HelloService&) = delete;
-    DBusClient& operator=(const HelloService&) = delete;
+    HelloService& operator=(const HelloService&) = delete;
     // De-Constructor
     ~HelloService() {
         dbus_error_free(&error);
@@ -72,29 +73,59 @@ public:
 
 public:
     void run_blocking_accept() {
-        // Main loop
-        while (true) {
-            // Without blocking (drawback is busy waiting)
-            //dbus_connection_read_write(this->conn, 1000);
-            // will return true/false; can set timeout (ms)
-            // should accompany with
-            //#include <unistd.h>
-            //usleep(1000);
+        if (false == runnable) {
+            return;
+        }
+        runnable = true;
 
-            // Blocking way
-            // useful to look at
-            // spec: https://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga580d8766c23fe5f49418bc7d87b67dc6
-            dbus_connection_read_write_dispatch(this->conn, -1);
-
-            // Initialize variables here to avoid crosses initialization (related to goto)
-            DBusMessage* message = nullptr;
-            DBusMessage* reply = nullptr;
-
-            // Get message
-            if ( nullptr == (message = dbus_connection_pop_message(this->conn)) ) {
-                std::cout << this->error.name << std::endl << this->error.message << std::endl;
-                goto UNREF_MESSAGE;
+        DBusServer::run(
+            [this] () {
+                this->DBusServer::handleRequest(
+                    [this] (DBusMessage* message) {
+                        if ( true == dbus_message_is_method_call(message, "com.example.HelloInterface", "Hello") ) {
+                            return this->HelloService::createReplyFromHello(message);
+                        }
+                        else {
+                            return dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found");
+                        }
+                    }
+                );
             }
+        );
+    }
+    
+    // !!! 可能會有 pointer 掛掉的問題
+    //     再找時間去 smart pointer 處理 ？
+    void run_accept_then_threading() {
+        if (false == runnable) {
+            return;
+        }
+        runnable = true;
+
+        DBusServer::run(
+            [this] () {
+                std::thread(
+                    [this] () {
+                        this->DBusServer::handleRequest(
+                            [this] (DBusMessage* message) {
+                                if ( true == dbus_message_is_method_call(message, "com.example.HelloInterface", "Hello") ) {
+                                    return this->HelloService::createReplyFromHello(message);
+                                }
+                                else {
+                                    return dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found");
+                                }
+                            }
+                        );
+                    } ).detach();
+            }
+        );
+    }
+    
+    void run_async_accept() {
+        if (false == runnable) {
+            return;
+        }
+        runnable = true;
 
             // Perform the task asynchronously
             /*
@@ -104,33 +135,7 @@ public:
                     std::cerr << "async: " << std::endl;
                 });
             */
-
-            // Switch request
-            if ( true == dbus_message_is_method_call(message, "com.example.HelloInterface", "Hello") ) {
-                reply = HelloService::createReplyFromHello(message);
-            }
-            else {
-                reply = dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found");
-            }
-
-            // Send reply
-            if (reply) {
-                dbus_connection_send(this->conn, reply, nullptr);
-                // Release reply
-                dbus_message_unref(reply);
-            }
-
-UNREF_MESSAGE:
-            // Release message
-            if (message) {
-                dbus_message_unref(message);
-            }
-        }
     }
-    
-    void run_accept_then_threading() {}
-    
-    void run_async_accept() {}
 
 private:
     DBusMessage* createReplyFromHello(DBusMessage* message) {
