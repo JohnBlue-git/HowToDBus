@@ -1,9 +1,3 @@
-/*
-
-g++ ../hello_client.cpp -o hello_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
-
-*/
-
 #include <iostream>
 #include <functional>
 
