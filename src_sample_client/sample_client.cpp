@@ -46,25 +46,34 @@ public:
             return;
         }
 
+        // Initialize here to avoid cross creation (related to goto)
+        DBusMessage* method_call = nullptr;
+        DBusMessage* reply = nullptr;
+
         // Compose remote procedure call
-        DBusMessage* method_call = DBusClient::composeMethodCall(
-            this->service_name,
-            this->object_path,
-            this->interface_name,
-            "Introspect"
-        );
-        if (! method_call) {
-            return;
+        if ( nullptr == 
+            (method_call = DBusClient::composeMethodCall(
+                this->service_name,
+                this->object_path,
+                this->interface_name,
+                "Introspect")
+             ) ) {
+            goto UNREF_METHOD;
         }
 
         // Send method call
-        DBusMessage* reply = DBusClient::sendMethodCall(method_call);
+        if ( nullptr == (reply = DBusClient::sendMethodCall(method_call)) ) {
+            goto UNREF_REPLY;
+        }
+
         // Parse response and Store
         Introspectable::parseIntrospectable(reply);
-        // Release reply
-        dbus_message_unref(reply);
 
-        // Execute callback
+        // Release
+UNREF_REPLY:
+        dbus_message_unref(reply);
+UNREF_METHOD:
+        dbus_message_unref(method_call);
     }
 
 public:
@@ -75,7 +84,13 @@ public:
 private:
     // s
     void parseIntrospectable(DBusMessage* reply) {
-        if ( ! dbus_message_get_args(reply, &(this->error), DBUS_TYPE_STRING, &(this->response), DBUS_TYPE_INVALID) ) {
+        if ( false == dbus_message_get_args(
+                reply,
+                &(this->error),
+                DBUS_TYPE_STRING,
+                &(this->response),
+                DBUS_TYPE_INVALID)
+            ) {
             std::cout << this->error.name << std::endl << this->error.message << std::endl;
         }
         std::cout << "Connected to D-Bus as \"" << ::dbus_bus_get_unique_name(this->conn) << "\"." << std::endl;
@@ -114,25 +129,34 @@ public:
             return;
         }
 
+        // Initialize here to avoid cross creation (related to goto)
+        DBusMessage* method_call = nullptr;
+        DBusMessage* reply = nullptr;
+
         // Compose remote procedure call
-        DBusMessage* method_call = DBusClient::composeMethodCall(
-            this->service_name,
-            this->object_path,
-            this->interface_name,
-            "GetStats"
-        );
-        if (! method_call) {
-            return;
+        if ( nullptr == 
+            (method_call = DBusClient::composeMethodCall(
+                this->service_name,
+                this->object_path,
+                this->interface_name,
+                "GetStats")
+            ) ) {
+            goto UNREF_METHOD1;
         }
 
         // Send method call
-        DBusMessage* reply = DBusClient::sendMethodCall(method_call);
+        if ( nullptr == (reply = DBusClient::sendMethodCall(method_call)) ) {
+            goto UNREF_REPLY1;
+        }
+        
         // Parse response and Store
         DebugStats::parseGetStats(reply);
-        // Release reply
-        dbus_message_unref(reply);
 
-        // Execute callback
+        // Release
+UNREF_REPLY1:
+        dbus_message_unref(reply);
+UNREF_METHOD1:
+        dbus_message_unref(method_call);
     }
 
 public:

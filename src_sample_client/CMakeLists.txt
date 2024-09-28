@@ -32,7 +32,7 @@ target_link_libraries(sample_client PRIVATE
 	${DBUS_LIBRARIES}
 	)
 
-#g++ sample_client.cpp -o sample_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
+#g++ ../sample_client.cpp -o sample_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
 
 #rm -rf * && cmake .. && make
 
