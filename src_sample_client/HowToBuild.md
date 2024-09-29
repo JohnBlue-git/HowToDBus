@@ -1,5 +1,5 @@
 
-## To allow self-defined service (optional)
+## To allow  user level permission for specific service (optional)
 Configuration Location:
 - for system services: /etc/dbus-1/system.d/
 - for session services: /etc/dbus-1/session.d/
