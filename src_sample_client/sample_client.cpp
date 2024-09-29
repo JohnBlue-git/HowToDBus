@@ -6,9 +6,6 @@ Ensure that the D-Bus configuration allows your user to call the method on the s
 
 XML
 
-<policy user="your-username">
-    <allow send_destination="org.freedesktop.DBus" send_interface="org.freedesktop.DBus.Debug.Stats" />
-</policy>
 
 */
 

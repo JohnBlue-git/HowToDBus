@@ -1,14 +1,10 @@
 
+## To allow self-defined service
 Configuration Location:
-
-for system services
-/etc/dbus-1/system.d/
-for session services
-/etc/dbus-1/session.d/
-
-
-com.example.HelloService.conf
-
+- for system services: /etc/dbus-1/system.d/
+- for session services: /etc/dbus-1/session.d/
+Create com.example.HelloService.conf:
+```xml
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
     "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 <busconfig>
@@ -21,33 +17,59 @@ com.example.HelloService.conf
         <allow send_interface="com.example.HelloInterface"/>
     </policy>
 </busconfig>
+```
 
+## Raw command build
+service
+```console
+# notes:
+# std::thread, std::future, async related ... all need -lpthread
 
+# cd build
+mkdir build && cd build
 
+# default
+g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra
 
+# service type: <BLOCK_ACCEPT | ASYNC_ACCEPT | TREAD_ACCEPT>
+g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra -DASYNC_ACCEPT
+```
+client
+```console
+# cd build
+mkdir build && cd build
 
+# client
+g++ ../hello_client.cpp -o hello_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
+```
+
+## CMake build
+```console
+# cd build
+mkdir build && cd build
+
+# default
+rm -rf * && cmake .. && make
+
+# SERVICE_TYPE:STRING=<BLOCK_ACCEPT | ASYNC_ACCEPT | TREAD_ACCEPT>
+rm -rf * && cmake .. -D SERVICE_TYPE:STRING=ASYNC_ACCEPT && make
+```
+
+## Run
+```console
+# start dbus daemon
 sudo service dbus --full-restart
 
-
-
-
-# <thread>, <future>, async related, need -lpthread
-g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra -DBLOCK_ACCEPT
-
--DBLOCK_ACCEPT
-
+# run service
 ./hello_service
-sudo ./hello_service will trigger many thing that are not allowed and show error message
 
-busctl call --system com.example.HelloService /com/example/HelloService com.example.HelloInterface Hello s world
-
-
-
-
-g++ ../hello_client.cpp -o hello_client $(pkg-config dbus-1 --cflags) -ldbus-1 -Wall -Wextra
-
+# run client
 ./hello_client
 
+# raw dbus client command
+busctl call --system com.example.HelloService /com/example/HelloService com.example.HelloInterface Hello s world
 
-cd build
-rm -rf * && cmake .. && make
+# note: sudo will trigger unneccessary error message
+# sudo ./hello_service
+# sudo ./hello_client
+```

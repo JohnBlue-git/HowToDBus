@@ -1,11 +1,12 @@
 #include <iostream>
 #include <thread>
 #include <future>       // for std::async
+#include <memory>       // for smart pointer
 
 #include "../include/dbus_conn_wrapper.hpp"
 #include "../include/dbus_server_wrapper.hpp"
 
-class HelloService : public DBusServer {
+class HelloService : public DBusServer, std::enable_shared_from_this<HelloService> {
 private:
     DBusError error;
 private:
@@ -27,8 +28,8 @@ public:
         }
     }
     // delete
-    HelloService(HelloService&& other) = delete;
-    HelloService& operator=(HelloService&& other) = delete;
+    //HelloService(HelloService&& other) = delete;
+    //HelloService& operator=(HelloService&& other) = delete;
     HelloService(const HelloService&) = delete;
     HelloService& operator=(const HelloService&) = delete;
     // De-Constructor
@@ -41,7 +42,7 @@ public:
         if (false == runnable) {
             return;
         }
-        runnable = true;
+        runnable = false;
 
         DBusServer::run(
             [this] () {
@@ -59,17 +60,57 @@ public:
         );
     }
     
-    // !!! 可能會有 pointer 掛掉的問題
+    // !!! .detach() 可能會有 pointer 掛掉的問題
     //     再找時間去 smart pointer 處理 ？
     void run_accept_then_threading() {
         if (false == runnable) {
             return;
         }
-        runnable = true;
+        runnable = false;
+
+        //auto self(shared_from_this());
 
         DBusServer::run(
             [this] () {
+                //auto self(shared_from_this());
+
                 std::thread(
+                    [this] () {
+                        //auto self(shared_from_this());
+                        
+                        //std::weak_ptr<HelloService> here = self;
+                        //std::shared_ptr<HelloService> locked = nullptr;
+                        //if ( nullptr == (locked = here.lock()) ) {
+                        //    return;
+                        //}
+
+                        this->DBusServer::handleRequest(
+                            [this] (DBusMessage* message) {
+                                //auto self(shared_from_this());
+
+                                if ( true == dbus_message_is_method_call(message, "com.example.HelloInterface", "Hello") ) {
+                                    return this->HelloService::createReplyFromHello(message);
+                                }
+                                else {
+                                    return dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found");
+                                }
+                            }
+                        );
+                    } ).join();
+                    //} ).detch();
+            }
+        );
+    }
+    
+    void run_async_accept() {
+        if (false == runnable) {
+            return;
+        }
+        runnable = false;
+
+        DBusServer::run(
+            [this] () {
+                std::async(std::launch::async, 
                     [this] () {
                         this->DBusServer::handleRequest(
                             [this] (DBusMessage* message) {
@@ -81,25 +122,9 @@ public:
                                 }
                             }
                         );
-                    } ).detach();
+                    });
             }
         );
-    }
-    
-    void run_async_accept() {
-        if (false == runnable) {
-            return;
-        }
-        runnable = true;
-
-            // Perform the task asynchronously
-            /*
-            std::async(std::launch::async, 
-                [] () {
-                    //
-                    std::cerr << "async: " << std::endl;
-                });
-            */
     }
 
 private:
@@ -145,14 +170,20 @@ int main() {
 
     // Service
     HelloService service(dbus_conn.getConn());
-#ifdef BLOCK_ACCEPT
+    //HelloService* service = new HelloService(dbus_conn.getConn());
+    //std::unique_ptr<HelloService> shr_ptr(service);
+#if defined(BLOCK_ACCEPT)
     service.run_blocking_accept();
-#endif
-#ifdef ASYNC_ACCEPT
+    //shr_ptr->run_blocking_accept();
+#elif defined(ASYNC_ACCEPT)
     service.run_async_accept();
-#endif
-#ifdef THREAD_ACCEPT
+    //shr_ptr->run_async_accept();
+#elif defined(THREAD_ACCEPT)
     service.run_accept_then_threading();
+    //shr_ptr->run_accept_then_threading();
+#else
+    service.run_blocking_accept();
+    //shr_ptr->run_blocking_accept();
 #endif
 
     return 0;

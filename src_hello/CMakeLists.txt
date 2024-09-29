@@ -30,14 +30,20 @@ add_executable(hello_service ${CMAKE_CURRENT_SOURCE_DIR}/hello_service.cpp)
 add_compile_options(
   -Wall -Wextra
   )
-target_compile_options(hello_service PRIVATE
-  -DBLOCK_ACCEPT
-  )
+# Additional definitions
+set(SERVICE_TYPE "BLOCK_ACCEPT" CACHE STRING "")
+if(SERVICE_TYPE STREQUAL "BLOCK_ACCEPT")
+    target_compile_definitions(hello_service PRIVATE BLOCK_ACCEPT)
+elseif(SERVICE_TYPE STREQUAL "ASYNC_ACCEPT")
+    target_compile_definitions(hello_service PRIVATE ASYNC_ACCEPT)
+elseif(SERVICE_TYPE STREQUAL "THREAD_ACCEPT")
+    target_compile_definitions(hello_service PRIVATE THREAD_ACCEPT)
+else()
+    target_compile_definitions(hello_service PRIVATE BLOCK_ACCEPT)
+endif()
 
 # Find Thread (could be pthread or win-thread)
 find_package(Threads REQUIRED)
 target_link_libraries(hello_service
     Threads::Threads
     )
-
-#rm -rf * && cmake .. && make
