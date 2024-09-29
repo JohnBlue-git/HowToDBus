@@ -45,7 +45,8 @@ public:
     ~HelloService() {
         dbus_error_free(&error);
 
-        delete[] const_cast<char*>(service_name);
+        // const char* don't need release
+        //delete[] const_cast<char*>(service_name);
     }
 
 public:

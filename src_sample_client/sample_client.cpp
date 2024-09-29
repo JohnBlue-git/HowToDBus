@@ -25,9 +25,10 @@ public:
     Introspectable& operator=(const Introspectable&) = delete;
     // De-Constructor
     ~Introspectable() {
-        delete[] const_cast<char*>(service_name);
-        delete[] const_cast<char*>(object_path);
-        delete[] const_cast<char*>(interface_name);
+        // const char* don't need release
+        //delete[] const_cast<char*>(service_name);
+        //delete[] const_cast<char*>(object_path);
+        //delete[] const_cast<char*>(interface_name);
     }
 
 public:
@@ -84,9 +85,10 @@ public:
     DBusClient& operator=(const DebugStats&) = delete;
     // De-Constructor
     ~DebugStats() {
-        delete[] const_cast<char*>(service_name);
-        delete[] const_cast<char*>(object_path);
-        delete[] const_cast<char*>(interface_name);
+        // const char* don't need release
+        //delete[] const_cast<char*>(service_name);
+        //delete[] const_cast<char*>(object_path);
+        //delete[] const_cast<char*>(interface_name);
     }
 
 public:
