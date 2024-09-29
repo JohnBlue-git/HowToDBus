@@ -10,7 +10,7 @@ class HelloService : public DBusServer, std::enable_shared_from_this<HelloServic
 private:
     DBusError error;
 private:
-    const char* service_name;// const no need to free
+    const char* service_name;
     bool runnable = true;
 
 public:
@@ -27,14 +27,25 @@ public:
             std::cerr << "Name Error: " << this->error.message << std::endl;
         }
     }
+    // Move constructor
+    // Default move constructor (using compiler-generated)
+    //MyString(MyString&& other) noexcept :
+    //        DBusServer(other.dc),
+    //    service_name(other.service_name)
+    //{
+        // Important: We do not need to set `other.service_name` to nullptr here,
+        // as we want to keep the original memory intact (const char*).
+    //}
     // delete
-    //HelloService(HelloService&& other) = delete;
-    //HelloService& operator=(HelloService&& other) = delete;
+    // not to delete HelloService(HelloService&& other) = delete;
+    // not to delete HelloService& operator=(HelloService&& other) = delete;
     HelloService(const HelloService&) = delete;
     HelloService& operator=(const HelloService&) = delete;
     // De-Constructor
     ~HelloService() {
         dbus_error_free(&error);
+
+        delete[] const_cast<char*>(service_name);
     }
 
 public:

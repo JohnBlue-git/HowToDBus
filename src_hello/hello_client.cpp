@@ -6,9 +6,9 @@
 
 class HelloClient : public DBusClient {
 private:
-    const char* service_name;// const no need to free
-    const char* object_path;// const no need to free
-    const char* interface_name;// const no need to free
+    const char* service_name;
+    const char* object_path;
+    const char* interface_name;
 
 public:
     // Constructor
@@ -24,7 +24,11 @@ public:
     HelloClient(const HelloClient&) = delete;
     HelloClient& operator=(const HelloClient&) = delete;
     // De-Constructor
-    ~HelloClient() {}
+    ~HelloClient() {
+        delete[] const_cast<char*>(service_name);
+        delete[] const_cast<char*>(object_path);
+        delete[] const_cast<char*>(interface_name);
+    }
 
 public:
     static void showHello(const std::string& response) {

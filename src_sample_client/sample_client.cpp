@@ -1,14 +1,3 @@
-/*
-
-Check D-Bus Policy Configuration: 
-
-Ensure that the D-Bus configuration allows your user to call the method on the specified interface. The configuration files are usually located in /etc/dbus-1/system.d/ or /etc/dbus-1/session.d/. You might need to add or modify a policy rule to allow your method call. Example policy rule:
-
-XML
-
-
-*/
-
 #include <iostream>
 #include <unordered_map>
 
@@ -17,10 +6,9 @@ XML
 
 class Introspectable : public DBusClient {
 private:
-    const char* service_name;// const no need to free
-    const char* object_path;// const no need to free
-    const char* interface_name;// const no need to free
-    const char* response = nullptr;
+    const char* service_name;
+    const char* object_path;
+    const char* interface_name;
 
 public:
     // Constructor
@@ -36,7 +24,11 @@ public:
     Introspectable(const Introspectable&) = delete;
     Introspectable& operator=(const Introspectable&) = delete;
     // De-Constructor
-    ~Introspectable() {}
+    ~Introspectable() {
+        delete[] const_cast<char*>(service_name);
+        delete[] const_cast<char*>(object_path);
+        delete[] const_cast<char*>(interface_name);
+    }
 
 public:
     void callIntrospectable() {
@@ -73,9 +65,9 @@ private:
 
 class DebugStats : public DBusClient {
 private:
-    const char* service_name;// const no need to free
-    const char* object_path;// const no need to free
-    const char* interface_name;// const no need to free
+    const char* service_name;
+    const char* object_path;
+    const char* interface_name;
 
 public:
     // Constructor
@@ -91,7 +83,11 @@ public:
     DebugStats(const DebugStats&) = delete;
     DBusClient& operator=(const DebugStats&) = delete;
     // De-Constructor
-    ~DebugStats() {}
+    ~DebugStats() {
+        delete[] const_cast<char*>(service_name);
+        delete[] const_cast<char*>(object_path);
+        delete[] const_cast<char*>(interface_name);
+    }
 
 public:
     void callGetStats() {
