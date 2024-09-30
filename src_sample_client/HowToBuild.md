@@ -51,6 +51,16 @@ sudo dbus-send --system --print-reply \
     --dest=org.freedesktop.DBus \
     /org/freedesktop/DBus \
     org.freedesktop.DBus.Introspectable.Introspect
+
+
+# other command
+org.freedesktop.DBus.Properties       interface -         -                                        -
+.Get                                  method    ss        v                                        -
+.GetAll                               method    s         a{sv}                                    -
+.Set                                  method    ssv       -                                        -
+.PropertiesChanged                    signal    sa{sv}as  -                                        -
+#
+sudo busctl call --system org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.Properties Get ss org.freedesktop.DBus Features
 ```
 
 

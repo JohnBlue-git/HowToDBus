@@ -1,6 +1,15 @@
 
 ## What is DBus
 
+D-Bus is an integral part of the Linux operating system and in true Linux fashion is heavily used and poorly documented. After hours of scouring the internet, I have pulled together some resources that start to paint a more complete picture of D-Bus, the problem D-Bus solves and how to interact with it programatically (in C/C++). \
+
+D-Bus at its essence is a message passing system that facilitates interprocess communication and generically abstracts a service's functionality. This allows a service to provide functionality and information in such a way that it can be accessed across process boundaries, language boundaries, licensing restrictions and even network boundaries! \
+
+Reference:
+- https://dbus.freedesktop.org/doc/dbus-tutorial.html#:~:text=D-Bus%20is%20a%20system%20for%20interprocess
+- https://dbus.freedesktop.org/doc/dbus-specification.html#:~:text=The%20bus%20itself%20owns%20a%20special
+- https://dbus.freedesktop.org/doc/dbus-api-design.html#:~:text=A%20D-Bus%20API%20is%20a%20specification
+
 (under construction ...)
 
 ## System VS Session
