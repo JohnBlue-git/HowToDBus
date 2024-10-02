@@ -31,7 +31,7 @@ mkdir build && cd build
 # default
 g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra
 
-# service type: <BLOCK_ACCEPT | ASYNC_ACCEPT | TREAD_ACCEPT>
+# service type: <BLOCK_ACCEPT | ASYNC_ACCEPT | THREAD_ACCEPT>
 g++ ../hello_service.cpp -o hello_service $(pkg-config dbus-1 --cflags) -ldbus-1 -lpthread -Wall -Wextra -DASYNC_ACCEPT
 ```
 client

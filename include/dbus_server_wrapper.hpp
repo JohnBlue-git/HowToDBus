@@ -97,6 +97,8 @@ protected:
 
 UNREF_MESSAGE:
             // Release message
-            dbus_message_unref(message);
+            if (message) {
+                dbus_message_unref(message);
+            }
     }
 };

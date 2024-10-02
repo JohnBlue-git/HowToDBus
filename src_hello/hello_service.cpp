@@ -72,14 +72,52 @@ public:
         );
     }
     
-    // !!! .detach() 可能會有 pointer 掛掉的問題
-    //     再找時間去 smart pointer 處理 ？
+    // ？？？ thread() 可能會有資源掛掉的問題 / client 收不到回覆的問題
     void run_accept_then_threading() {
         if (false == runnable) {
             return;
         }
         runnable = false;
 
+        for (;;) {
+            dbus_connection_read_write_dispatch(this->conn, -1);
+
+            DBusMessage* message = dbus_connection_pop_message(this->conn);
+            // Get message
+            if ( nullptr == message ) {
+                continue;
+            }
+
+            std::thread(
+                [this, message] () { // !!! use copy message instead of ref message
+
+                    // Initialize variables here to avoid crosses initialization (related to goto)
+                    DBusMessage* reply = nullptr;
+
+                    // Generate response
+                    if ( true == dbus_message_is_method_call(message, "com.example.HelloInterface", "Hello") ) {
+                        reply = this->HelloService::createReplyFromHello(message);
+                    }
+                    else {
+                        reply = dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found");
+                    }
+
+                    // Send reply
+                    if (reply) {
+                        dbus_connection_send(this->conn, reply, nullptr);
+                        // Release reply
+                        dbus_message_unref(reply);
+                    }
+
+                    // Release message
+                    if (message)
+                        dbus_message_unref(message);
+
+                } ).detach();
+        }
+
+
+        /*
         //auto self(shared_from_this());
 
         DBusServer::run(
@@ -108,10 +146,11 @@ public:
                                 }
                             }
                         );
-                    } ).join();
-                    //} ).detch();
+                    } ).join(); 可以
+                    //} ).detach(); 無法
             }
         );
+        */        
     }
     
     void run_async_accept() {
