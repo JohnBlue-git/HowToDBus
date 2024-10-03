@@ -104,8 +104,12 @@ protected:
 
         // Release
 UNREF_REPLY:
-        dbus_message_unref(reply);
+        if (reply) {
+            dbus_message_unref(reply);
+        }
 UNREF_METHOD:
-        dbus_message_unref(method_call);
+        if (method_call) {
+            dbus_message_unref(method_call);
+        }
     }
 };

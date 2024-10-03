@@ -8,17 +8,17 @@
 // Interface
 //
 
-class IDBusServer {
-protected:
-    // Run server
-    virtual void run(
-        const std::function<void()>& handleBlock)
-        = 0;
+class IRouter {
+public:
+   virtual DBusMessage* handleRequest(DBusMessage* message) = 0;
+};
 
-    // Handle request
-    virtual void handleRequest(
-        const std::function<DBusMessage*(DBusMessage*)>& generateResponse)
-        = 0;
+class IDBusServer {
+public:
+    virtual void run() = 0;
+
+protected:
+    virtual void runSession(DBusMessage* message) = 0;
 };
 
 //
@@ -30,12 +30,28 @@ protected:
     DBusError error;
 protected:
     DBusConnection* conn;
+protected:
+    bool runnable;
+protected:
+    const char* service_name;
+protected:
+    IRouter* controller;
 
 public:
     // Constructor
-    DBusServer(DBusConnection* dc): conn(dc)
+    DBusServer(DBusConnection* dc, const char* sn, IRouter* ctl) :
+        conn(dc),
+        runnable(true),
+        service_name(sn),
+        controller(ctl)
     {
         dbus_error_init(&error);
+
+        // Request a name on the bus
+        if ( false == dbus_bus_request_name(this->conn, this->service_name, DBUS_NAME_FLAG_REPLACE_EXISTING, &(this->error)) ) {
+            this->runnable = false;
+            std::cerr << "Name Error: " << this->error.message << std::endl;
+        }
     }
     // delete
     DBusServer(DBusServer&& other) = delete;
@@ -47,11 +63,13 @@ public:
         dbus_error_free(&error);
     }
 
-protected:
-    void run(
-        const std::function<void()>& handleBlock)
-        override
-    {
+public:
+    virtual void run() {
+        // Check runnable
+        if (false == this->runnable) {
+            return;
+        }
+
         // Main loop
         for (;;) {
             // Without blocking (drawback is busy waiting)
@@ -66,39 +84,29 @@ protected:
             // spec: https://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga580d8766c23fe5f49418bc7d87b67dc6
             dbus_connection_read_write_dispatch(this->conn, -1);
 
-            // Handle request block
-            handleBlock();
+            DBusMessage* message = dbus_connection_pop_message(this->conn);
+            if (nullptr == message) {
+                continue;
+            }
+
+            dbus_connection_send(this->conn, dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found"), nullptr);
+
+            dbus_message_unref(message);
         }
     }
 
-    void handleRequest(
-        const std::function<DBusMessage*(DBusMessage*)>& generateResponse)
-        override
-    {
-            // Initialize variables here to avoid crosses initialization (related to goto)
-            DBusMessage* message = nullptr;
-            DBusMessage* reply = nullptr;
+protected:
+    void runSession(DBusMessage* message) override {
+        // Generate response
+        DBusMessage* reply = controller->handleRequest(message);
+        if (nullptr == reply) {
+            return;
+        }
 
-            // Get message
-            if ( nullptr == (message = dbus_connection_pop_message(this->conn)) ) {
-                std::cout << this->error.name << std::endl << this->error.message << std::endl;
-                goto UNREF_MESSAGE;
-            }
-
-            // Generate response
-            reply = generateResponse(message);
-
-            // Send reply
-            if (reply) {
-                dbus_connection_send(this->conn, reply, nullptr);
-                // Release reply
-                dbus_message_unref(reply);
-            }
-
-UNREF_MESSAGE:
-            // Release message
-            if (message) {
-                dbus_message_unref(message);
-            }
+        // Send reply
+        dbus_connection_send(this->conn, reply, nullptr);
+            
+        // Release reply
+        dbus_message_unref(reply);
     }
 };
