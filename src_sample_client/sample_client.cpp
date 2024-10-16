@@ -19,6 +19,7 @@ public:
         interface_name("org.freedesktop.DBus.Introspectable")
         {}
     // delete
+    Introspectable() = delete;
     Introspectable(Introspectable&& other) = delete;
     Introspectable& operator=(Introspectable&& other) = delete;
     Introspectable(const Introspectable&) = delete;
@@ -79,6 +80,7 @@ public:
         interface_name("org.freedesktop.DBus.Debug.Stats")
         {}
     // delete
+    DebugStats() = delete;
     DebugStats(DebugStats&& other) = delete;
     DebugStats& operator=(DebugStats&& other) = delete;
     DebugStats(const DebugStats&) = delete;
