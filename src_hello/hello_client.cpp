@@ -19,6 +19,7 @@ public:
         interface_name("com.example.HelloInterface")
         {}
     // delete
+    HelloClient() = delete;
     HelloClient(HelloClient&& other) = delete;
     HelloClient& operator=(HelloClient&& other) = delete;
     HelloClient(const HelloClient&) = delete;
