@@ -15,6 +15,7 @@ public:
     // Constructor
     HelloController() {}
     // delete
+    HelloController() = delete;
     HelloController(HelloController&& other) = delete;
     HelloController& operator=(HelloController&& other) = delete;
     HelloController(const HelloController&) = delete;
@@ -78,6 +79,7 @@ public:
     // Constructor
     BlockAcceptService(DBusConnection* dc, HelloController* ctl) : DBusServer(dc, "com.example.HelloService", ctl) {}
     // delete
+    BlockAcceptService() = delete;
     BlockAcceptService(BlockAcceptService&& other) = delete;
     BlockAcceptService& operator=(BlockAcceptService&& other) = delete;
     BlockAcceptService(const BlockAcceptService&) = delete;
@@ -124,6 +126,7 @@ public:
     // Constructor
     AsyncAcceptService(DBusConnection* dc, HelloController* ctl) : DBusServer(dc, "com.example.HelloService", ctl) {}
     // delete
+    AsyncAcceptService() = delete;
     AsyncAcceptService(AsyncAcceptService&& other) = delete;
     AsyncAcceptService& operator=(AsyncAcceptService&& other) = delete;
     AsyncAcceptService(const AsyncAcceptService&) = delete;
@@ -174,6 +177,7 @@ public:
     // Constructor
     ThreadAcceptService(DBusConnection* dc, HelloController* ctl) : DBusServer(dc, "com.example.HelloService", ctl) {}
     // delete
+    ThreadAcceptService() = delete;
     ThreadAcceptService(ThreadAcceptService&& other) = delete;
     ThreadAcceptService& operator=(ThreadAcceptService&& other) = delete;
     ThreadAcceptService(const ThreadAcceptService&) = delete;
