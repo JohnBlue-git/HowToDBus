@@ -352,7 +352,7 @@ dbus_connection_unref(reply);
 dbus_connection_send(dbus_conn, reply, nullptr);
 ```
 
-## Futer Plan
+## Future Plan
 
 ### introduction
 - (not yet)
