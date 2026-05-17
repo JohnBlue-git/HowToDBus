@@ -15,7 +15,6 @@ public:
     // Constructor
     HelloController() {}
     // delete
-    HelloController() = delete;
     HelloController(HelloController&& other) = delete;
     HelloController& operator=(HelloController&& other) = delete;
     HelloController(const HelloController&) = delete;
@@ -224,8 +223,8 @@ public:
 //
 
 int main() {
-    // DBus connection (type: DBUS_BUS_SYSTEM / DBUS_BUS_SESSION)
-    DBusConn dbus_conn(DBUS_BUS_SYSTEM);
+    // DBus connection (type: DBUS_BUS_SESSION / DBUS_BUS_SESSION)
+    DBusConn dbus_conn(DBUS_BUS_SESSION);
 
     // Controller
     HelloController hello_ctl;

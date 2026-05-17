@@ -236,6 +236,48 @@ dbus-send --system --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DB
 dbus-send --system --print-reply --dest=<service name> --object-path <object path> --method <interface name>.<method name> [arguments ...]
 ```
 
+## Quick Start Examples
+
+This repository contains several D-Bus examples. All session-based examples must be run within a `dbus-run-session` environment.
+
+### Hello Service (Simple Method Call)
+
+```bash
+cd src_hello/build
+dbus-run-session -- bash -c 'timeout 5 ./hello_service > /tmp/hello_service.log 2>&1 & sleep 1; ./hello_client; wait'
+```
+
+### Calculator Service (Complex Arguments)
+
+```bash
+cd src_calculator/build
+dbus-run-session -- bash -c 'timeout 5 ./calculator_service > /tmp/calc_service.log 2>&1 & sleep 1; ./calculator_client; wait'
+```
+
+### Property Service (Get/Set Properties)
+
+```bash
+cd src_property/build
+dbus-run-session -- bash -c 'timeout 8 ./property_service > /tmp/prop_service.log 2>&1 & sleep 2; ./property_client; wait'
+```
+
+### Signal Service (Periodic Signals)
+
+```bash
+cd src_signal
+dbus-run-session -- bash -c './build/signal_service 500 > /tmp/signal_service.log 2>&1 & SERVICE_PID=$!; sleep 1; timeout 3 ./build/signal_client; CLIENT_EC=$?; kill $SERVICE_PID; wait $SERVICE_PID 2>/dev/null; echo CLIENT_EC=$CLIENT_EC'
+```
+
+If you run the client from another terminal in a headless environment, reuse the same session address:
+
+```bash
+cd /workspaces/HowToDBus/src_signal
+export DBUS_SESSION_BUS_ADDRESS="$(cat /tmp/signal_dbus_addr)"
+./build/signal_client
+```
+
+**Note:** All services use the session D-Bus by default. Use `dbus-run-session` to create an isolated D-Bus environment for testing.
+
 ## How to code with DBus
 
 ### Check header files exit
@@ -354,9 +396,6 @@ dbus_connection_send(dbus_conn, reply, nullptr);
 
 ## Future Plan
 
-### introduction
-- (not yet)
-
 ### sample client
 - method: s
 - method: a{sv}
@@ -364,12 +403,117 @@ dbus_connection_send(dbus_conn, reply, nullptr);
 - signal (?)
 
 ### hello
-- service
-    - method s
-    - property (?)
-    - signal (?)
-    - async (not yet)
-- client
-    - method
-    - property (?)
-    - signal (?)
+- service "com.example.HelloService"
+    - interface "com.example.HelloInterface"
+        - method "Hello" (s) -> s
+- service "com.example.CalcService"
+    - interface "com.example.CalcInterface"
+        - method "Add" (ii) -> i
+        - method "Multiply" (dd) -> d
+        - method "Concatenate" (ss) -> s
+        - method "ProcessData" (sid) -> s
+
+### property
+- service "com.example.PropertyService"
+    - interface "org.freedesktop.DBus.Properties"
+        - method "Get" (ss) -> v
+        - method "Set" (ssv) -> (void)
+        - method "GetAll" (s) -> a{sv}
+        - properties: Temperature (i), Brightness (i), DeviceName (s), Status (s)
+
+## Configuration for Custom DBus Services
+
+To allow self-defined D-Bus services to be recognized by the system, configuration files are required.
+
+### Configuration File Locations
+
+**For System Services:**
+```
+/etc/dbus-1/system.d/
+```
+
+**For Session Services:**
+```
+/etc/dbus-1/session.d/
+```
+
+### Example: com.example.PropertyService.conf
+
+Create the configuration file at `/etc/dbus-1/system.d/com.example.PropertyService.conf`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <!-- Allow this process to own the service name -->
+  <policy user="<current user>">
+    <allow own="com.example.PropertyService"/>
+  </policy>
+
+  <!-- Allow clients to call methods on this service/interface -->
+  <policy context="default">
+    <allow send_destination="com.example.PropertyService"/>
+    <allow send_interface="org.freedesktop.DBus.Properties"/>
+  </policy>
+</busconfig>
+```
+
+### Setup Steps
+
+1. **Create the configuration file:**
+   ```bash
+   sudo nano /etc/dbus-1/system.d/com.example.PropertyService.conf
+   ```
+
+2. **Copy content from above example**
+
+3. **Restart D-Bus daemon:**
+   ```bash
+   sudo systemctl restart dbus
+   ```
+
+4. **Verify service is recognized:**
+   ```bash
+   busctl list | grep com.example.PropertyService
+   ```
+
+### Example Configuration Files for Other Services
+
+#### com.example.CalcService.conf
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <!-- Allow this process to own the service name -->
+  <policy user="<current user>">
+    <allow own="com.example.CalcService"/>
+  </policy>
+
+  <!-- Allow clients to call methods on this service/interface -->
+  <policy context="default">
+    <allow send_destination="com.example.CalcService"/>
+    <allow send_interface="com.example.CalcInterface"/>
+  </policy>
+</busconfig>
+```
+
+#### com.example.HelloService.conf
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <!-- Allow this process to own the service name -->
+  <policy user="<current user>">
+    <allow own="com.example.HelloService"/>
+  </policy>
+
+  <!-- Allow clients to call methods on this service/interface -->
+  <policy context="default">
+    <allow send_destination="com.example.HelloService"/>
+    <allow send_interface="com.example.HelloInterface"/>
+  </policy>
+</busconfig>
+```

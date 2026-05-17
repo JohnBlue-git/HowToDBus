@@ -89,7 +89,11 @@ public:
                 continue;
             }
 
-            dbus_connection_send(this->conn, dbus_message_new_error(message, DBUS_ERROR_UNKNOWN_METHOD, "Method not found"), nullptr);
+            DBusMessage* reply = controller->handleRequest(message);
+            if (nullptr != reply) {
+                dbus_connection_send(this->conn, reply, nullptr);
+                dbus_message_unref(reply);
+            }
 
             dbus_message_unref(message);
         }

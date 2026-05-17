@@ -62,6 +62,12 @@ protected:
             return;
         }
 
+        // dbus_connection_send_with_reply_and_block() requires a clean DBusError.
+        if (dbus_error_is_set(&(this->error))) {
+            dbus_error_free(&(this->error));
+        }
+        dbus_error_init(&(this->error));
+
         // Initialize here to avoid cross creation (related to goto)
         DBusMessage* method_call = nullptr;
         DBusMessage* reply = nullptr;
@@ -94,6 +100,7 @@ protected:
                 &(this->error))
             ) ) {
             std::cerr << error.name << std::endl << error.message << std::endl;
+            dbus_error_free(&(this->error));
             goto UNREF_REPLY;
         }
 

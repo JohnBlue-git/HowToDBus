@@ -92,8 +92,8 @@ private:
 };
 
 int main() {
-    // DBus connection (type: DBUS_BUS_SYSTEM / DBUS_BUS_SESSION)
-    DBusConn dbus_conn(DBUS_BUS_SYSTEM);
+    // DBus connection (type: DBUS_BUS_SESSION / DBUS_BUS_SESSION)
+    DBusConn dbus_conn(DBUS_BUS_SESSION);
 
     HelloClient client(dbus_conn.getConn());
     // static function

@@ -14,22 +14,22 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(DBUS REQUIRED dbus-1)
 include_directories(
     ${DBUS_INCLUDE_DIRS}
-	)
+)
 link_libraries(
 	${DBUS_LIBRARIES}
-	)
+)
 
 # Include header
 include_directories(hello_client PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/../include
-  )
+)
 # Executable
 add_executable(hello_client ${CMAKE_CURRENT_SOURCE_DIR}/hello_client.cpp)
 add_executable(hello_service ${CMAKE_CURRENT_SOURCE_DIR}/hello_service.cpp)
 # Additional flags
 add_compile_options(
   -Wall -Wextra
-  )
+)
 # Additional definitions
 set(SERVICE_TYPE "BLOCK_ACCEPT" CACHE STRING "")
 if(SERVICE_TYPE STREQUAL "BLOCK_ACCEPT")
@@ -46,4 +46,4 @@ endif()
 find_package(Threads REQUIRED)
 target_link_libraries(hello_service
     Threads::Threads
-    )
+)
